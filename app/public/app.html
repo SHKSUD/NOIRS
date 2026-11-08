@@ -1,0 +1,292 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ghost Director</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;600&display=swap">
+<style>
+:root{--bg:#05070f;--panel:rgba(16,22,44,.62);--line:rgba(140,160,220,.16);--text:#eef1fa;--muted:#8d97b5;--accent:#e9b75a;--accent-ink:#140d02;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:15px/1.55 Inter,system-ui,sans-serif;background:#05070f radial-gradient(ellipse 120% 70% at 50% -10%,#1a2a5e 0%,#0b1330 45%,#05070f 80%) fixed}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(#000 0,transparent 7%,transparent 93%,#000 100%),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.65));z-index:0}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;z-index:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:1}
+h1{font-family:'Cinzel','Playfair Display',Georgia,serif;font-weight:600;letter-spacing:.32em;text-transform:uppercase;font-size:clamp(24px,4vw,38px)!important;background:linear-gradient(180deg,#fff 0%,#e9b75a 120%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{letter-spacing:.04em}
+.card,.shot{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 20px 50px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.04)}
+.shot{transition:transform .25s,box-shadow .25s}.shot:hover{transform:translateY(-3px);box-shadow:0 26px 60px -18px rgba(0,0,0,.9),0 0 0 1px rgba(233,183,90,.35)}
+button:not(.ghost){background:linear-gradient(180deg,#f3c977,#d39a35);box-shadow:0 6px 20px -6px rgba(233,183,90,.55)}
+button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+textarea,select,input{background:rgba(3,6,18,.6)!important}
+label{color:#a9b3d4!important}
+#cmpT{font-family:'Cinzel',Georgia,serif;letter-spacing:.2em;text-transform:uppercase}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:26px;margin:0}.sub{color:var(--muted);margin:4px 0 20px}
+.grid{display:grid;grid-template-columns:1fr 280px;gap:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin:0 0 6px}
+textarea,select,input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
+textarea{min-height:190px;resize:vertical}
+button{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font:inherit;font-weight:600}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#status{color:var(--muted);font-size:13px;margin-top:10px;min-height:20px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:20px}
+.shot{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.shot svg{display:block;width:100%;aspect-ratio:16/9}
+.meta{padding:10px;font-size:13px}.meta b{color:var(--accent)}.tags{color:var(--muted);font-size:12px}
+.dlg{font-style:italic;margin-top:4px}
+#player{display:none;position:fixed;inset:0;background:#000;z-index:9;align-items:center;justify-content:center;flex-direction:column}
+#player .scr{width:min(96vw,1100px);aspect-ratio:16/9;overflow:hidden;position:relative}
+#player .scr svg{width:100%;height:100%;transition:transform linear}
+#sub{position:absolute;bottom:6%;left:0;right:0;text-align:center;color:#fff;font-size:clamp(14px,2.2vw,22px);text-shadow:0 2px 6px #000;padding:0 8%}
+#close{margin-top:14px}
+@media print{body{background:#fff;color:#000}.grid,.sub,.noprint{display:none!important}.board{grid-template-columns:repeat(3,1fr);gap:10px}.shot{break-inside:avoid;border-color:#999;background:#fff}.tags{color:#444!important}}
+/* ===== Auth: sign-in gate + user chip ===== */
+body.locked{overflow:hidden}
+#gate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;background:#05070f radial-gradient(ellipse 120% 70% at 50% -10%,#1a2a5e 0%,#0b1330 45%,#05070f 80%)}
+#gate[hidden]{display:none}
+.gate-card{position:relative;width:min(440px,100%);text-align:center;padding:40px 28px 28px;border:1px solid var(--line);border-radius:16px;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 30px 80px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.04)}
+.gate-card h1{margin:0 0 6px;font-size:clamp(22px,6vw,30px)!important;letter-spacing:.24em}
+.gate-tag{margin:0 0 14px;color:var(--accent);font-family:'Cinzel',Georgia,serif;letter-spacing:.08em;font-size:15px}
+.gate-sub{margin:0 0 26px;color:var(--muted);font-size:14px}
+#gsign{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 16px;background:#fff!important;color:#1f1f1f;border:1px solid #dadce0;border-radius:999px;box-shadow:0 6px 20px -8px rgba(0,0,0,.6)!important;font-weight:600}
+#gsign:hover{background:#f3f4f6!important}
+#gsign:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#gsign svg{width:18px;height:18px;flex:none}
+.gate-msg{min-height:20px;margin:14px 0 0;font-size:13px;color:#f3a6a6}
+.gate-dev{margin:10px 0 0;font-size:12px;color:var(--accent)}
+.gate-fine{margin:18px 0 0;font-size:12px;color:var(--muted)}
+.who{position:absolute;top:26px;right:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.who[hidden]{display:none}
+.who .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#f3c977,#d39a35);color:var(--accent-ink);font-weight:600;overflow:hidden;flex:none}
+.who .av img{width:100%;height:100%;object-fit:cover}
+.who .nm{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .dev{font-size:10px;letter-spacing:.08em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px}
+.who button{padding:6px 12px;font-size:13px}
+@media(max-width:760px){.who{position:static;justify-content:flex-end;margin-bottom:10px}.who .nm{max-width:120px}}
+@media print{.who,#gate{display:none!important}}
+</style>
+</head><body>
+<div id="gate" hidden role="dialog" aria-modal="true" aria-labelledby="gtitle">
+ <div class="gate-card">
+  <h1 id="gtitle">Ghost Director</h1>
+  <p class="gate-tag">Learn to direct like the masters</p>
+  <p class="gate-sub">Turn an idea into a script, shot list, storyboard and animatic in the style of Kubrick, Ray, Wong Kar-wai and more.</p>
+  <button id="gsign" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Continue with Google</span></button>
+  <p id="gdev" class="gate-dev" hidden>Dev mode: fake sign-in, no Supabase needed.</p>
+  <p id="gmsg" class="gate-msg" role="alert"></p>
+  <p class="gate-fine">Free to start. Your projects are saved to your account.</p>
+ </div>
+</div>
+<div id="who" class="who" hidden><span class="av" id="wav"></span><span class="nm" id="wnm"></span><span class="dev" id="wdev" hidden>DEV</span><button class="ghost" id="signout" type="button">Sign out</button></div>
+<script>
+// ===== Auth (Supabase Google login). Adds the user's token to every /api call. =====
+(function(){
+ const CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
+ const MOCK_TOKEN='mock-dev-token',MOCK_KEY='gd_mock_signed_in';
+ const MOCK_USER={email:'dev@localhost',user_metadata:{full_name:'Dev Director'}};
+ const of=window.fetch.bind(window);let cfg=null,sb=null,readyFn;const ready=new Promise(r=>readyFn=r);
+ const $=id=>document.getElementById(id);
+ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+ async function token(){if(cfg&&cfg.mockAuth)return MOCK_TOKEN;const s=sb&&(await sb.auth.getSession()).data.session;return s?s.access_token:''}
+ window.fetch=async(u,o={})=>{const url=typeof u==='string'?u:u.url;
+  if(!url.startsWith('/api/')||url.startsWith('/api/config'))return of(u,o);
+  await ready;const r=await of(u,{...o,headers:{...(o.headers||{}),authorization:'Bearer '+(await token())}});
+  if(r.status===401)gate('Your session has ended. Please sign in again.');return r};
+ function gate(msg){$('gate').hidden=false;document.body.classList.add('locked');$('gmsg').textContent=msg||'';$('gdev').hidden=!(cfg&&cfg.mockAuth);$('gsign').disabled=!!(cfg&&cfg.broken);setTimeout(()=>$('gsign').focus(),0)}
+ function signedIn(u){const m=u.user_metadata||{},name=m.full_name||m.name||u.email||'Signed in';
+  $('wnm').textContent=name;$('wnm').title=u.email||'';$('wdev').hidden=!cfg.mockAuth;
+  const av=$('wav');av.textContent='';if(m.avatar_url){const i=new Image();i.src=m.avatar_url;i.alt='';i.referrerPolicy='no-referrer';i.onerror=()=>{av.textContent=name[0].toUpperCase()};av.append(i)}else av.textContent=name[0].toUpperCase();
+  document.querySelector('.wrap').prepend($('who'));$('who').hidden=false;$('gate').hidden=true;document.body.classList.remove('locked');readyFn()}
+ const load=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('Could not load the login library. Check your connection.'));document.head.append(s)});
+ async function init(){
+  try{cfg=await (await of('/api/config')).json()}catch(e){cfg={broken:true};return gate('Could not reach the server.')}
+  if(cfg.mockAuth)return store.get(MOCK_KEY)?signedIn(MOCK_USER):gate();
+  if(!cfg.supabaseUrl||!cfg.anonKey){cfg.broken=true;return gate('Sign-in is not set up yet: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.')}
+  try{await load(CDN)}catch(e){return gate(e.message)}
+  sb=supabase.createClient(cfg.supabaseUrl,cfg.anonKey,{auth:{flowType:'pkce',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+  const q=new URLSearchParams(location.search),errMsg=q.get('error_description');
+  const {data:{session}}=await sb.auth.getSession();
+  if(q.has('code')||q.has('error'))history.replaceState(null,'',location.pathname);
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')gate()});
+  session?signedIn(session.user):gate(errMsg?'Sign-in failed: '+errMsg:'')}
+ async function signIn(){$('gmsg').textContent='';
+  if(cfg.mockAuth){store.set(MOCK_KEY,'1');return signedIn(MOCK_USER)}
+  $('gsign').disabled=true;$('gsign').lastChild.textContent='Opening Google…';
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error){$('gsign').disabled=false;$('gsign').lastChild.textContent='Continue with Google';$('gmsg').textContent=error.message}}
+ async function signOut(){if(cfg.mockAuth)store.del(MOCK_KEY);else if(sb)await sb.auth.signOut();location.reload()}
+ document.addEventListener('DOMContentLoaded',()=>{$('gsign').onclick=signIn;$('signout').onclick=signOut;init()});
+})();
+</script>
+<script>
+// Shim: maps the artifact runtime (claude.use) to this app's own backend.
+(function(){
+ const dev=(()=>{try{let d=localStorage.getItem('gd_device');if(!d){d=crypto.randomUUID();localStorage.setItem('gd_device',d)}return d}catch(e){return 'anon'}})();
+ async function ask(input,opts={}){const r=await fetch('/api/claude',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({input})});const j=await r.json();if(!r.ok)throw{code:'error',message:j.error};opts.onText&&opts.onText({text:j.text,delta:j.text});return{text:j.text,truncated:false}}
+ ask.json=async(i,o)=>{const t=(await ask(i,o)).text;const m=t.match(/[\[{][\s\S]*[\]}]/);return JSON.parse(m?m[0]:t)};
+ const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click()}};
+ let subs=[];const load=async()=>{const r=await fetch('/api/projects',{headers:{'x-device':dev}});const list=r.ok?await r.json():[];subs.forEach(f=>f({docs:list.map(v=>({data:()=>v}))}))};
+ const col={onSnapshot(f){subs.push(f);load();return()=>{}},doc:id=>({set:async data=>{const r=await fetch('/api/projects',{method:'POST',headers:{'content-type':'application/json','x-device':dev},body:JSON.stringify({id,data})});if(!r.ok)throw{message:(await r.json()).error};load()}})};
+ const db={collection:()=>col};const user={id:async()=>dev};
+ const map={sample:ask,downloads,db,user};
+ window.claude={use:async n=>map[n]||null};
+})();
+</script>
+<div class="wrap">
+<h1>Ghost Director</h1>
+<p class="sub">Write a scene. Claude breaks it into shots, draws the storyboard, and plays it back as an animatic.</p>
+<div class="grid">
+ <div class="card"><label>Idea → scene</label>
+ <div class="row" style="margin:0 0 12px"><input id="idea" placeholder="e.g. Two strangers share the last metro of the night; one is leaving Delhi forever" style="flex:1;min-width:200px"><button class="ghost" id="write">✍ Write scene</button></div>
+ <label>Script</label>
+ <textarea id="script">EXT. ROOFTOP – NIGHT
+Rain. Delhi's lights blur below. ARJUN (30s) stands at the edge, phone glowing in his hand.
+MEERA (O.S.): You came.
+He turns. MEERA steps out of the stairwell, soaked, holding an old film reel.
+ARJUN: You said it was the last copy.
+She holds it out. He hesitates — then takes it. Thunder. The lights of the city go dark.</textarea>
+ <div class="row"><button class="ghost" id="doctor">🩺 Script doctor</button><select id="lang" style="width:auto"><option value="English">English</option><option value="Hindi (Devanagari)">Hindi</option><option value="Hinglish (Hindi in Roman script mixed with English)">Hinglish</option></select></div>
+ <div id="notes" style="font-size:13px;color:var(--muted);margin-top:8px"></div>
+ <label style="margin-top:12px">Character sheet <span style="text-transform:none;letter-spacing:0">(keeps characters consistent)</span></label>
+ <textarea id="chars" style="min-height:70px">ARJUN: 30s, lean, stubble, short messy hair, long dark raincoat.
+MEERA: late 20s, shoulder-length wet hair, oversized denim jacket, silver nose ring.</textarea></div>
+ <div class="card">
+  <label>Director style</label>
+  <select id="style">
+   <optgroup label="Director-inspired">
+   <option value="Wes Anderson-inspired: perfect symmetry, centered subjects, pastel palette, flat staging, whip pans, dollhouse framing">Wes Anderson</option>
+   <option value="Christopher Nolan-inspired: IMAX scale, practical cold blues and steel greys, wide lenses, crosscut tension, low angles">Christopher Nolan</option>
+   <option value="Denis Villeneuve-inspired: monolithic minimal compositions, fog and haze, tiny figures in vast spaces, ochre and grey, slow push-ins">Denis Villeneuve</option>
+   <option value="Stanley Kubrick-inspired: one-point perspective, cold symmetry, long corridors, steady tracking shots, unsettling stillness">Stanley Kubrick</option>
+   <option value="Wong Kar-wai-inspired: step-printed motion blur, saturated neon reds and greens, cramped frames, rain, longing close-ups">Wong Kar-wai</option>
+   <option value="Quentin Tarantino-inspired: trunk shots, low angles, bold primary colours, long dialogue two-shots, sudden crash zooms">Quentin Tarantino</option>
+   <option value="Satyajit Ray-inspired: humanist realism, natural light, black-and-white or soft monochrome, patient observational framing">Satyajit Ray</option>
+   <option value="Akira Kurosawa-inspired: telephoto depth, weather as emotion (wind, rain), dynamic movement, bold staging in deep focus">Akira Kurosawa</option>
+   <option value="David Fincher-inspired: precise locked-off camera, sickly green-yellow low-key light, dark controlled palette, clinical framing">David Fincher</option>
+   <option value="Sanjay Leela Bhansali-inspired: opulent symmetrical sets, rich golds and crimsons, candlelight, grand slow crane moves, theatrical staging">Sanjay Leela Bhansali</option>
+   </optgroup>
+   <optgroup label="Generic looks">
+   <option value="symmetrical centered framing, pastel palette, static camera">Symmetry & pastels</option>
+   <option value="noir, hard shadows, low-key lighting, wet streets, high contrast">Neo-noir</option>
+   <option value="handheld intimacy, natural light, long takes, muted earth tones">Naturalist</option>
+   <option value="neon teal and magenta, slow motion, lonely wide frames">Neon melancholy</option>
+   <option value="epic wide vistas, golden hour, sweeping crane moves">Epic golden hour</option>
+   </optgroup>
+  </select>
+  <label style="margin-top:12px">Max shots</label>
+  <input id="max" type="number" min="3" max="16" value="8">
+  <label style="margin-top:12px">Compare with <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+  <select id="style2"><option value="">— none —</option></select>
+  <label style="margin-top:12px;display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;color:var(--text)"><input type="checkbox" id="learn" style="width:auto"> Learn mode (why this shot)</label>
+  <div class="row"><button id="go">Generate storyboard</button></div>
+  <div class="row"><button class="ghost" id="play" disabled>▶ Play animatic</button><button class="ghost" id="dl" disabled>Export shot list</button><button class="ghost" id="pdf" disabled>Print / PDF</button><button class="ghost" id="vid" disabled>⬇ Animatic video</button><button class="ghost" id="add" disabled>+ Add shot</button><button id="film">🎬 Render film</button></div>
+  <label style="margin-top:14px">Projects</label>
+  <div class="row" style="margin-top:0"><select id="proj" style="flex:1"><option value="">— saved projects —</option></select><button class="ghost" id="save">Save</button></div>
+  <div id="score" style="margin-top:12px;font-size:13px"></div>
+  <div id="status"></div>
+ </div>
+</div>
+<div class="board" id="board"></div>
+<div id="cmp" style="display:none"><h2 id="cmpT" style="font-size:18px;margin:28px 0 0"></h2><div id="score2" style="font-size:13px"></div><div class="board" id="board2"></div></div>
+</div>
+<div id="player"><div class="scr" id="scr"><div id="sub"></div></div><button class="ghost" id="close" style="color:#fff">Close</button></div>
+<script>
+const $=id=>document.getElementById(id);let shots=[],pal=null,stop=false;
+const status=t=>$('status').textContent=t;
+function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function figure(x,y,h,col){const w=h*.32;return `<g fill="${col}"><circle cx="${x}" cy="${y-h+w*.55}" r="${w*.5}"/><path d="M${x-w} ${y} Q${x-w} ${y-h*.7} ${x} ${y-h*.72} Q${x+w} ${y-h*.7} ${x+w} ${y} Z"/></g>`}
+function clean(svg){const m=String(svg).match(/<svg[\s\S]*<\/svg>/i);if(!m)return null;return m[0].replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi,'').replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,'').replace(/(href\s*=\s*["'])\s*(?!#)[^"']*/gi,'$1#')}
+function sketchWrap(s){const inner=s.svg.replace(/^<svg[^>]*>/i,'').replace(/<\/svg>\s*$/i,'');return `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg"><defs><filter id="pn${s.n}${s._b||''}"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="${s.n}"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter><filter id="pp${s.n}${s._b||''}"><feTurbulence baseFrequency=".9" numOctaves="1" seed="9"/><feColorMatrix values="0 0 0 0 .95 0 0 0 0 .93 0 0 0 0 .88 0 0 0 -.9 1"/></filter></defs><rect width="640" height="360" fill="#f3efe6"/><rect width="640" height="360" filter="url(#pp${s.n}${s._b||''})" opacity=".5"/><g filter="url(#pn${s.n}${s._b||''})">${inner}</g><rect x="4" y="4" width="632" height="352" fill="none" stroke="#222" stroke-width="3"/><text x="14" y="28" font-family="Courier New,monospace" font-size="16" fill="#333">${s.n}</text></svg>`}
+async function drawSketch(s,style){const p=`You are a professional film storyboard artist. Draw ONE storyboard panel as SVG (viewBox="0 0 640 360").
+Art direction: hand-drawn pencil and ink storyboard look. Black/grey strokes only (#111, #444, #888), stroke-linecap round, varied stroke widths 1-4, loose confident lines. Use grey hatching (parallel thin lines) for shadows, a few grey fills for depth. Draw recognisable people with proper anatomy (head, shoulders, hands, clothing folds, facial direction), real props and environment with perspective lines. Add classic storyboard notation where useful: a bold arrow for camera move or character motion.
+Composition must match shot type exactly (${s.type}, ${s.lens}, camera ${s.camera}). Style influence: ${style}.
+Shot: ${s.action}. Mood: ${s.mood}. Characters visible: ${s.characters}.
+Character designs (draw them consistently — hair, build, clothing): ${$('chars').value||'n/a'}
+Rules: only <path>,<line>,<circle>,<ellipse>,<rect>,<polygon>,<polyline>,<g>; no text, no images, no scripts, no gradients. 40-120 elements. Output ONLY the <svg>…</svg>.`;
+ try{const r=await sample(p,{modelTier:'default',cache:true});const c=clean(r.text);if(c){s.svg=c;return true}}catch(e){if(e.code==='rate_limited'||e.code==='not_granted')throw e}return false}
+function frame(s,p){if(s.svg)return sketchWrap(s);const W=640,H=360,[sky,mid,fg,lit]=p;const t=(s.type||'').toLowerCase();const n=Math.max(1,Math.min(3,s.characters||1));
+ let g=`<defs><linearGradient id="g${s.n}${s._b||''}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky}"/><stop offset="1" stop-color="${mid}"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g${s.n}${s._b||''})"/>`;
+ const light=s.light_x??.7;g+=`<circle cx="${W*light}" cy="${H*.25}" r="${H*.5}" fill="${lit}" opacity=".18"/>`;
+ let h,base;if(t.includes('extreme close')){h=H*2.2;base=H*1.7}else if(t.includes('close')){h=H*1.4;base=H*1.25}else if(t.includes('medium')||t.includes('over')){h=H*.85;base=H*1.02}else if(t.includes('wide')||t.includes('establish')){h=H*.22;base=H*.82;
+  for(let i=0;i<14;i++){const bw=30+((i*37)%50),bh=40+((i*53)%120);g+=`<rect x="${i*48-10}" y="${H*.82-bh}" width="${bw}" height="${bh}" fill="${fg}" opacity=".55"/>`}}else{h=H*.5;base=H*.92}
+ g+=`<rect y="${H*.82}" width="${W}" height="${H*.18}" fill="${fg}"/>`;
+ const pos=s.subject_x??.5;
+ for(let i=0;i<n;i++){const x=W*(n==1?pos:(.3+.4*i/(n-1)));g+=figure(x,base,h*(i&&t.includes('over')?1.6:1),i&&t.includes('over')?'#000':fg)}
+ if(t.includes('over')) g=g.replace(/<g fill="#000">/,'<g fill="#000" opacity=".85">');
+ if((s.mood||'').match(/rain|storm/i))for(let i=0;i<60;i++){const x=(i*97)%W,y=(i*61)%H;g+=`<line x1="${x}" y1="${y}" x2="${x-6}" y2="${y+18}" stroke="${lit}" stroke-width="1" opacity=".35"/>`}
+ g+=`<rect width="${W}" height="${H}" fill="none" stroke="#000" stroke-width="18" opacity=".35"/>`;
+ return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`}
+function card(s,p,edit){return `<div class="shot">${s.clipUrl?`<video src="${esc(s.clipUrl)}" controls muted loop style="width:100%;aspect-ratio:16/9;display:block;background:#000"></video>`:s.frameImg?`<img src="${s.frameImg}" style="width:100%;aspect-ratio:16/9;display:block;object-fit:cover">`:frame(s,p)}${s.clipState?`<div class="tags" style="padding:6px 10px;color:var(--accent)">${esc(s.clipState)}</div>`:""}<div class="meta"><b>${s.n}. ${esc(s.type)}</b> · ${esc(s.duration)}s<div>${esc(s.action)}</div>${s.dialogue?`<div class="dlg">“${esc(s.dialogue)}”</div>`:''}<div class="tags">${esc(s.camera)} · ${esc(s.lens)} · ${esc(s.mood)}</div>${s.style_note?`<div class="tags" style="color:var(--accent);margin-top:4px">◆ ${esc(s.style_note)}</div>`:''}${$('learn').checked&&s.lesson?`<div style="margin-top:6px;padding:6px 8px;border-left:3px solid var(--accent);font-size:12px">🎓 ${esc(s.lesson)}</div>`:''}${edit?`<div class="row noprint" style="margin-top:8px;gap:4px">${[['clip','🎬 Clip'],['regen','↻ Redraw'],['up','↑'],['down','↓'],['del','✕']].map(([a,l])=>`<button class="ghost" data-a="${a}" data-n="${s.n}" style="padding:5px 10px;font-size:12px">${l}</button>`).join('')}</div>`:''}</div></div>`}
+function render(){$('board').innerHTML=shots.map(s=>card(s,pal,true)).join('');if(shots2.length){$('cmp').style.display='block';$('board2').innerHTML=shots2.map(s=>card(s,pal2,false)).join('')}else $('cmp').style.display='none'}
+let shots2=[],pal2=null;const renum=()=>shots.forEach((s,i)=>s.n=i+1);
+$('learn').onchange=render;
+$('style2').innerHTML+= $('style').innerHTML;
+$('add').onclick=()=>{shots.push({n:shots.length+1,type:'Medium',duration:3,action:'New shot — describe it, then Redraw',dialogue:'',camera:'static',lens:'35mm',mood:'',characters:1});render()};
+$('board').addEventListener('click',async e=>{const a=e.target.dataset?.a,n=e.target.dataset?.n;if(!a)return;const i=shots.findIndex(x=>String(x.n)===n);
+ if(a==='up'&&i>0){[shots[i-1],shots[i]]=[shots[i],shots[i-1]];renum();return render()}
+ if(a==='down'&&i<shots.length-1){[shots[i+1],shots[i]]=[shots[i],shots[i+1]];renum();return render()}
+ if(a==='del'){shots.splice(i,1);renum();return render()}
+ if(a!=='regen'||!sample)return;const s=shots[i];e.target.disabled=true;e.target.textContent='Drawing…';const old=s.svg;delete s.svg;
+ try{const r=await sample(`Rewrite this single storyboard shot with a fresh, stronger composition in the style "${$('style').value}". Keep its story beat and dialogue. Return ONLY JSON with the same keys: ${JSON.stringify(s)}`,{modelTier:'default',cache:false});const j=JSON.parse(r.text.match(/\{[\s\S]*\}/)[0]);Object.assign(s,j,{n:s.n});}catch(_){}
+ if(!(await drawSketch(s,$('style').value).catch(()=>false)))s.svg=old;render()});
+async function scoreBoard(list=shots,style=$('style').value,el='score'){$(el).textContent='Scoring style match…';try{const r=await sample.json(`You are a strict film critic. Score how faithfully this shot list follows the style "${style}" from 0-10. Return ONLY JSON {"score":7,"strengths":"1 sentence","missing":"1 sentence on what the style would do that this lacks"}. Shots: ${JSON.stringify(list.map(({svg,...x})=>x))}`,{modelTier:'default'});$(el).innerHTML=`<b style="color:var(--accent);font-size:18px">Style match ${esc(r.score)}/10</b><div>✓ ${esc(r.strengths)}</div><div style="color:var(--muted)">✗ ${esc(r.missing)}</div>`}catch(e){$(el).textContent=''}}
+let col=null,projects={};const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'untitled';
+function listP(){const cur=$('proj').value;$('proj').innerHTML='<option value="">— saved projects —</option>'+Object.entries(projects).sort((a,b)=>(b[1].at||0)-(a[1].at||0)).map(([k,v])=>`<option value="${esc(k)}">${esc(v.name)}</option>`).join('');$('proj').value=cur}
+(async()=>{const db=await claude.use('db'),user=await claude.use('user');const id=user&&await user.id();if(!db||!id){$('save').disabled=true;$('proj').innerHTML='<option>Sign in to save projects</option>';return}
+ col=db.collection('data/users/'+id+'/projects');col.onSnapshot(q=>{projects={};q.docs.forEach(d=>{const v=d.data();if(v)projects[slug(v.name||'untitled')]=v});listP()},()=>{})})();
+$('save').onclick=async()=>{if(!col)return;const sel=$('proj').value;const name=(sel&&projects[sel]?.name)||($('idea').value||$('script').value.split('\n')[0]||'Untitled').trim().slice(0,40);
+ $('save').disabled=true;try{await col.doc(slug(name)).set({name,at:Date.now(),script:$('script').value,idea:$('idea').value,chars:$('chars').value,lang:$('lang').value,style:$('style').value,pal,shots});$('proj').value=slug(name);status('Saved to your account.')}catch(e){status('Save failed: '+(e.message||e.code))}$('save').disabled=false};
+$('proj').onchange=()=>{const d=projects[$('proj').value];if(!d)return;$('script').value=d.script||'';$('idea').value=d.idea||'';$('chars').value=d.chars||'';$('lang').value=d.lang||'English';$('style').value=d.style;pal=d.pal;shots=d.shots||[];shots2=[];render();$('play').disabled=$('dl').disabled=$('pdf').disabled=$('vid').disabled=$('add').disabled=!shots.length;status('Loaded.')};
+$('doctor').onclick=async()=>{if(!sample)return;$('doctor').disabled=true;status('Script doctor reading…');
+ try{const r=await sample.json(`You are a script doctor. Improve this scene for the screen: sharper visual beats, show-don't-tell, tighter dialogue, a stronger final image. Keep length similar and keep screenplay format. Dialogue language: ${$('lang').value}. Visual style target: "${$('style').value}". Return ONLY JSON {"script":"improved scene","notes":["3 short notes on what you changed"]}.\nScene:\n${$('script').value}`,{modelTier:'default',cache:false});if(r.script){$('script').value=r.script;$('notes').innerHTML=(r.notes||[]).map(n=>'• '+esc(n)).join('<br>')}status('Script improved.')}catch(e){status('Script doctor failed: '+(e.message||e.code))}$('doctor').disabled=false};
+function drawToCanvas(svgStr){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr)})}
+$('vid').onclick=async()=>{if(!window.MediaRecorder)return status('Video export not supported in this browser.');$('vid').disabled=true;const c=document.createElement('canvas');c.width=1280;c.height=720;const x=c.getContext('2d');
+ const st=c.captureStream(30),mime=['video/webm;codecs=vp9','video/webm','video/mp4'].find(m=>MediaRecorder.isTypeSupported(m));const rec=new MediaRecorder(st,{mimeType:mime});const chunks=[];rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);rec.start();
+ for(const s of shots){status(`Rendering video shot ${s.n}/${shots.length}…`);const img=await drawToCanvas(frame(s,pal).replace('<svg ','<svg width="1280" height="720" '));const d=(s.duration||3)*1000,t0=performance.now(),cam=(s.camera||'').toLowerCase();const sub=s.dialogue?(s.speaker?s.speaker+': ':'')+s.dialogue:s.action;
+  await new Promise(done=>{const step=()=>{const k=Math.min(1,(performance.now()-t0)/d);const z=1+k*(cam.includes('dolly')||cam.includes('crane')?.18:cam.includes('pan')?.12:.04),dx=cam.includes('pan')?-k*77:0;x.fillStyle='#000';x.fillRect(0,0,1280,720);if(img){x.save();x.translate(640+dx,360);x.scale(z,z);x.drawImage(img,-640,-360,1280,720);x.restore()}
+   x.font='600 30px system-ui';x.textAlign='center';x.lineWidth=6;x.strokeStyle='#000';x.fillStyle='#fff';x.strokeText(sub,640,680,1180);x.fillText(sub,640,680,1180);k<1?requestAnimationFrame(step):done()};step()})}
+ rec.stop();await new Promise(r=>rec.onstop=r);const blob=new Blob(chunks,{type:mime});const dl=await claude.use('downloads');if(dl){try{await dl.save({filename:'animatic.'+(mime.includes('mp4')?'mp4':'webm'),data:blob});status('Video ready.')}catch(e){status('Download cancelled.')}}else status('Download unavailable here.');$('vid').disabled=false};
+$('pdf').onclick=()=>window.print();
+$('write').onclick=async()=>{if(!sample||!$('idea').value.trim())return status('Type an idea first.');$('write').disabled=true;status('Writing scene…');
+ try{await sample(`You are a screenwriter. Turn this idea into ONE short cinematic scene (150-250 words) in standard screenplay format: scene heading, vivid visual action lines, character names in CAPS, sharp dialogue, a strong final image. Write it so it suits this visual style: "${$('style').value}". Write dialogue in ${$('lang').value}; keep scene headings and action lines in English. If a character sheet is given, use those characters: ${$('chars').value||'none'}. Output only the scene.\nIdea: ${$('idea').value}`,{modelTier:'default',cache:false,onText:({text})=>{$('script').value=text}});status('Scene written — edit it or generate the storyboard.')}catch(e){status('Writing failed: '+(e.message||e.code))}$('write').disabled=false};
+let sample=null;(async()=>{sample=await claude.use('sample');if(!sample){status('AI unavailable in this view — open on claude.ai.');$('go').disabled=true}})();
+const bdPrompt=style=>`You are a film director and storyboard artist. Break this script into at most ${$('max').value} shots in this visual style: "${style}". Keep dialogue in its original language.
+Characters: ${$('chars').value||'n/a'}
+Return ONLY JSON: {"palette":["#sky","#midground","#foreground/silhouette","#key light"] (4 hex colours matching style+scene),"shots":[{"n":1,"type":"Wide|Establishing|Medium|Over-the-shoulder|Close-up|Extreme close-up","duration":3,"action":"what we see, 1 sentence","dialogue":"spoken line or empty","speaker":"name or empty","camera":"static|pan|dolly in|handheld|crane","lens":"24mm etc","mood":"short mood words","style_note":"which specific technique of the chosen style this shot uses and why, 1 short sentence","lesson":"film-school note: what this shot choice does to the audience emotionally and the cinema-grammar rule behind it, 1-2 sentences","characters":1,"subject_x":0.5,"light_x":0.7}]}
+Script:\n${$('script').value}`;
+$('go').onclick=async()=>{if(!sample)return;$('go').disabled=true;status('Breaking down the script…');shots2=[];
+ const style=$('style').value,s2=$('style2').value;
+ try{const [r,r2]=await Promise.all([sample.json(bdPrompt(style),{modelTier:'default'}),s2?sample.json(bdPrompt(s2),{modelTier:'default'}).catch(()=>null):null]);pal=r.palette;shots=r.shots||[];
+  if(r2){pal2=r2.palette;shots2=(r2.shots||[]).map(s=>({...s,_b:'b'}));$('cmpT').textContent='Compare: '+$('style2').selectedOptions[0].text}
+  render();$('play').disabled=$('dl').disabled=$('add').disabled=false;
+  let done=0,q=[...shots.map(s=>[s,style]),...shots2.map(s=>[s,s2])],tot=q.length;status(`Sketching panels 0/${tot}…`);
+  const worker=async()=>{while(q.length){const [s,st]=q.shift();await drawSketch(s,st);done++;render();status(`Sketching panels ${done}/${tot}…`)}};
+  await Promise.all([worker(),worker(),worker()]);status(`${tot} panels ready.`);$('pdf').disabled=$('vid').disabled=false;scoreBoard();if(shots2.length)scoreBoard(shots2,s2,'score2')}
+ catch(e){status(e.code==='not_granted'?'Allow AI access to generate.':'Failed: '+(e.message||e.code))}
+ $('go').disabled=false};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function speak(t){return new Promise(r=>{if(!t||!window.speechSynthesis)return r();const u=new SpeechSynthesisUtterance(t);u.rate=.95;if(/[ऀ-ॿ]/.test(t)||$('lang').value!=='English')u.lang='hi-IN';u.onend=u.onerror=r;speechSynthesis.speak(u)})}
+$('play').onclick=async()=>{stop=false;$('player').style.display='flex';const scr=$('scr');
+ for(const s of shots){if(stop)break;scr.querySelectorAll('svg,video').forEach(e=>e.remove());if(s.clipUrl){scr.insertAdjacentHTML('afterbegin',`<video src="${esc(s.clipUrl)}" autoplay playsinline style="width:100%;height:100%"></video>`);$('sub').textContent='';await new Promise(r=>{const v=scr.querySelector('video');v.onended=v.onerror=r});continue}scr.insertAdjacentHTML('afterbegin',frame(s,pal));const svg=scr.querySelector('svg');const d=(s.duration||3)*1000;
+  const cam=(s.camera||'').toLowerCase();svg.style.transitionDuration=d+'ms';svg.style.transform='scale(1)';
+  $('sub').textContent=s.dialogue?(s.speaker?s.speaker+': ':'')+s.dialogue:s.action;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{svg.style.transform=cam.includes('dolly')||cam.includes('crane')?'scale(1.18)':cam.includes('pan')?'translateX(-6%) scale(1.12)':cam.includes('hand')?'rotate(.6deg) scale(1.05)':'scale(1.03)'}));
+  await Promise.all([sleep(d),speak(s.dialogue)])}
+ if(!stop)$('sub').textContent='— END —'};
+$('close').onclick=()=>{stop=true;speechSynthesis?.cancel();$('player').style.display='none'};
+$('dl').onclick=async()=>{const dl=await claude.use('downloads');const data=JSON.stringify({style:$('style').value,palette:pal,shots},null,2);
+ if(dl){try{await dl.save({filename:'shot-list.json',data})}catch(e){}}else status('Download unavailable here.')};
+
+// ===== Real AI render: sketch → Gemini frame → Veo clip =====
+async function svgToPng(svg){const img=await drawToCanvas(svg.replace('<svg ','<svg width="1280" height="720" '));const c=document.createElement('canvas');c.width=1280;c.height=720;c.getContext('2d').drawImage(img,0,0,1280,720);return c.toDataURL('image/png').split(',')[1]}
+async function renderClip(s){const style=$('style').value,chars=$('chars').value;
+ s.clipState='Making frame…';render();
+ const pr=`Shot: ${s.type}, ${s.lens}. ${s.action}. Mood: ${s.mood}. Style: ${style}. Characters: ${chars}`;
+ let r=await fetch('/api/frame',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sketch:await svgToPng(frame(s,pal)),prompt:pr})});let j=await r.json();if(!r.ok)throw new Error(j.error);
+ s.frameImg='data:image/png;base64,'+j.image;s.clipState='Animating (1–3 min)…';render();
+ r=await fetch('/api/clip',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:j.image,prompt:`${pr}. Camera: ${s.camera}. ${s.dialogue?`${s.speaker||'Character'} says: "${s.dialogue}"`:''}`})});j=await r.json();if(!r.ok)throw new Error(j.error);
+ for(let i=0;i<60;i++){await sleep(6000);const p=await fetch('/api/clip?op='+encodeURIComponent(j.op));const q=await p.json();if(!p.ok)throw new Error(q.error);if(q.done){s.clipUrl=q.url;s.clipState='';render();return}}
+ throw new Error('Timed out')}
+async function safeClip(s){try{await renderClip(s)}catch(e){s.clipState='Failed: '+e.message;render()}}
+$('board').addEventListener('click',e=>{if(e.target.dataset?.a==='clip'){const s=shots.find(x=>String(x.n)===e.target.dataset.n);if(s)safeClip(s)}});
+$('film').onclick=async()=>{$('film').disabled=true;for(const s of shots){if(!s.clipUrl){status(`Rendering clip ${s.n}/${shots.length}…`);await safeClip(s)}}status('Film clips ready — press Play.');$('film').disabled=false};
+</script>
+</body></html>
