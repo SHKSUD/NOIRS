@@ -1,0 +1,76 @@
+// Project -> Scene -> Shot. Characters are shared across a project's shots.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db" // local dev DB; production storage is an open question
+}
+
+model Project {
+  id         String      @id @default(cuid())
+  title      String
+  script     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  scenes     Scene[]
+  characters Character[]
+}
+
+model Scene {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order     Int
+  heading   String
+  summary   String  @default("")
+  shots     Shot[]
+
+  @@index([projectId, order])
+}
+
+model Shot {
+  id          String          @id @default(cuid())
+  sceneId     String
+  scene       Scene           @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  order       Int
+  description String
+  camera      String          @default("")
+  framing     String          @default("")
+  mood        String          @default("")
+  durationSec Float           @default(3)
+  dialogue    String          @default("")
+  characters  ShotCharacter[]
+
+  // Milestone 2+: storyboard + per-shot rendering (unused in Milestone 1)
+  storyboardImage String?
+  renderStatus    String  @default("none") // none | queued | rendering | done | failed
+  renderOutput    String?
+  renderInputHash String? // hash of the inputs that produced renderOutput, so re-render is idempotent
+
+  updatedAt DateTime @updatedAt
+
+  @@index([sceneId, order])
+}
+
+model Character {
+  id             String          @id @default(cuid())
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  referenceImage String? // Milestone 2: locked reference image
+  styleNote      String          @default("")
+  shots          ShotCharacter[]
+
+  @@unique([projectId, name])
+}
+
+model ShotCharacter {
+  shotId      String
+  shot        Shot      @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([shotId, characterId])
+}
