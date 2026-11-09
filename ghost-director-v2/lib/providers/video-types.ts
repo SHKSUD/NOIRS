@@ -10,7 +10,10 @@ export type VideoRequest = {
   durationSec: number;
   dialogue: string;
   frame: ImageData; // the shot's up-to-date storyboard frame; the clip starts from it
+  quality: RenderQuality;
 };
+
+export type RenderQuality = 'draft' | 'final';
 
 export type PollResult =
   | { done: false }

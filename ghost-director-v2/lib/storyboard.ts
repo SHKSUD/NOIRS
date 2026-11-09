@@ -12,7 +12,7 @@ const PROMPT_VERSION = 1; // bump when the frame prompt changes, to mark every f
 
 export const shotWithRefs = {
   include: {
-    scene: { select: { heading: true, order: true } },
+    scene: { select: { heading: true, order: true, project: { select: { renderQuality: true } } } },
     characters: { include: { character: { select: { name: true, styleNote: true, referenceImage: true } } } },
   },
 } satisfies Prisma.ShotDefaultArgs;

@@ -12,7 +12,7 @@ export default async function RenderPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const project = await db.project.findUnique({
     where: { id },
-    select: { scenes: { orderBy: { order: 'asc' }, select: { shots: { orderBy: { order: 'asc' }, ...shotWithRefs } } } },
+    select: { renderQuality: true, scenes: { orderBy: { order: 'asc' }, select: { shots: { orderBy: { order: 'asc' }, ...shotWithRefs } } } },
   });
   if (!project) notFound();
 
@@ -26,9 +26,10 @@ export default async function RenderPage({ params }: { params: Promise<{ id: str
     <div className="space-y-4">
       <p className="text-sm text-muted">
         Each shot renders on its own from its storyboard frame. Re-rendering one shot never touches the others.
-        {' '}Video model: <span className={provider === 'mock' ? 'text-gold' : ''}>{provider === 'mock' ? 'mock (animated preview, no cost)' : provider}</span>.
+        {' '}Video model: <span className={provider === 'mock' ? 'text-gold' : ''}>{provider === 'mock' ? 'mock (animated preview, no cost)' : provider === 'omni' ? 'Gemini Omni Flash (paid)' : provider}</span>.
       </p>
-      <RenderBoard projectId={id} shots={shots} provider={provider} />
+      {/* key: remount with fresh server state when quality changes (every clip's staleness changes) */}
+      <RenderBoard key={project.renderQuality} projectId={id} shots={shots} provider={provider} quality={project.renderQuality === 'final' ? 'final' : 'draft'} />
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { pollRender, startRender } from '@/app/actions';
+import { useRouter } from 'next/navigation';
+import { pollRender, setRenderQuality, startRender } from '@/app/actions';
 import type { RenderState } from '@/lib/render';
 
 export type RenderShot = {
@@ -12,7 +13,14 @@ export type RenderShot = {
 
 const POLL_MS = 1500;
 
-export default function RenderBoard({ projectId, shots: initial, provider }: { projectId: string; shots: RenderShot[]; provider: string }) {
+// Approximate USD per second of output (Gemini API pricing page, checked 2026-11-09). Mock is free.
+const RATE: Record<string, Record<'draft' | 'final', number>> = { omni: { draft: 0.023, final: 0.07 } };
+// Omni bills whole seconds between 3 and 15 per clip.
+const billedSecs = (d: number) => Math.min(15, Math.max(3, Math.ceil(d)));
+
+export default function RenderBoard({ projectId, shots: initial, provider, quality }: { projectId: string; shots: RenderShot[]; provider: string; quality: 'draft' | 'final' }) {
+  const router = useRouter();
+  const [savingQuality, setSavingQuality] = useState(false);
   const [shots, setShots] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [starting, setStarting] = useState(false);
@@ -49,6 +57,17 @@ export default function RenderBoard({ projectId, shots: initial, provider }: { p
   const doneSecs = secs(shots.filter(s => s.render.url && !s.render.stale));
   const todoSecs = secs(todo);
 
+  const rate = RATE[provider]?.[quality];
+  const cost = (list: RenderShot[]) => (rate ? ` (about ${(list.reduce((t, s) => t + billedSecs(s.durationSec), 0) * rate).toFixed(2)})` : '');
+
+  async function changeQuality(q: string) {
+    if (q === quality) return;
+    setSavingQuality(true);
+    const r = await setRenderQuality(projectId, q);
+    setSavingQuality(false);
+    if (r.ok) router.refresh(); else alert(r.error);
+  }
+
   async function start(s: RenderShot, force: boolean) {
     setError(s.id, '');
     const r = await startRender(s.id, force).catch(e => ({ ok: false as const, error: String(e?.message || e) }));
@@ -56,7 +75,7 @@ export default function RenderBoard({ projectId, shots: initial, provider }: { p
   }
 
   async function renderAll() {
-    if (paid && !confirm(`Render ${todo.length} clip${todo.length === 1 ? '' : 's'} (${todoSecs}s of video) with ${provider}? This costs money.`)) return;
+    if (paid && !confirm(`Render ${todo.length} clip${todo.length === 1 ? '' : 's'} (${todoSecs}s of video) with ${provider} at ${quality} quality? This costs money${cost(todo)}.`)) return;
     setStarting(true);
     for (const s of todo) await start(s, false);
     setStarting(false);
@@ -64,7 +83,7 @@ export default function RenderBoard({ projectId, shots: initial, provider }: { p
 
   async function one(s: RenderShot) {
     const force = !!s.render.url && !s.render.stale; // up-to-date clips re-render only on purpose
-    if (paid && !confirm(`${force ? 'Re-render' : 'Render'} shot ${s.number} (${s.durationSec}s) with ${provider}? This costs money.`)) return;
+    if (paid && !confirm(`${force ? 'Re-render' : 'Render'} shot ${s.number} (${s.durationSec}s) with ${provider} at ${quality} quality? This costs money${cost([s])}.`)) return;
     await start(s, force);
   }
 
@@ -79,6 +98,15 @@ export default function RenderBoard({ projectId, shots: initial, provider }: { p
           {n.blocked > 0 && <><span className="text-muted"> · </span><b>{n.blocked}</b> need a frame</>}
         </p>
         <p className="text-xs text-muted">{doneSecs}s of {secs(shots)}s rendered</p>
+        <label className="flex items-center gap-2 text-xs text-muted">
+          Quality
+          <select className="field w-auto py-1 text-xs" value={quality} disabled={savingQuality || n.rendering > 0}
+            onChange={e => changeQuality(e.target.value)} aria-describedby="quality-hint">
+            <option value="draft">Draft (360p{RATE[provider] ? `, ~${RATE[provider].draft}/s` : ''})</option>
+            <option value="final">Final (720p{RATE[provider] ? `, ~${RATE[provider].final}/s` : ''})</option>
+          </select>
+        </label>
+        <p id="quality-hint" className="sr-only">Changing quality marks every clip out of date. Nothing re-renders until you click Update.</p>
         <button type="button" className="btn btn-gold ml-auto" disabled={starting || todo.length === 0} onClick={renderAll}>
           {starting ? 'Starting…' : todo.length ? `Update ${todo.length} clip${todo.length === 1 ? '' : 's'}` : n.rendering ? 'Rendering…' : n.blocked ? 'Waiting on frames' : 'All up to date'}
         </button>

@@ -49,7 +49,7 @@ export function mockClipSvg(req: VideoRequest): string {
 ${subs.map((l, i) => `<text x="320" y="${subY + i * 20}" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#fff" stroke="#000" stroke-width="3" paint-order="stroke">${esc(l)}</text>`).join('')}
 <rect class="bar" x="0" y="356" height="4" fill="#e9b75a"/>
 <rect x="8" y="8" width="132" height="20" rx="4" fill="#000" fill-opacity=".6"/>
-<text x="16" y="22" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#e9b75a">MOCK CLIP · ${esc(req.shotNumber)} · ${d}s</text>
+<text x="16" y="22" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#e9b75a">MOCK ${req.quality === 'final' ? 'FINAL' : 'DRAFT'} · ${esc(req.shotNumber)} · ${d}s</text>
 </svg>`;
 }
 

@@ -256,3 +256,16 @@ export async function assembleExport(projectId: string): Promise<{ ok: true; sta
     return { ok: false, error: message(e) };
   }
 }
+
+// Draft (360p, cheap) or final (720p) for every clip in the project. Changing it marks clips out of date;
+// nothing is re-rendered until the creator asks.
+export async function setRenderQuality(projectId: string, quality: string): Promise<{ ok: boolean; error?: string }> {
+  if (quality !== 'draft' && quality !== 'final') return { ok: false, error: 'Unknown quality.' };
+  try {
+    await db.project.update({ where: { id: projectId }, data: { renderQuality: quality } });
+    revalidatePath(`/projects/${projectId}`, 'layout');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: message(e) };
+  }
+}

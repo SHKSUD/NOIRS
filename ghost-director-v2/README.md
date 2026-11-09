@@ -9,7 +9,7 @@ npm run db:push      # creates prisma/dev.db
 npm run dev          # http://localhost:3000  (add -- -p 3001 to change port)
 npm test             # proves re-rendering one shot touches no other shot; checks assembly with real ffmpeg
 ```
-No API key needed: the LLM and image model are mocked. To use real models, copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`, and/or `IMAGE_PROVIDER=gemini` / `VIDEO_PROVIDER=veo` with `GEMINI_API_KEY`. Real image and video models cost money, so they are opt-in.
+No API key needed: the LLM and image model are mocked. To use real models, copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`, and/or `IMAGE_PROVIDER=gemini` / `VIDEO_PROVIDER=omni` with `GEMINI_API_KEY` (billing enabled; a Gemini app subscription does not cover API use). Real image and video models cost money, so they are opt-in.
 
 ## Milestone 1 (done)
 - Home: paste a script (or "Use sample script") → **Break down into shots**
@@ -30,3 +30,9 @@ No API key needed: the LLM and image model are mocked. To use real models, copy 
 - Export tab: shots in scene order, with skipped shots flagged (not rendered / clip out of date / still rendering)
 - **Assemble cut** joins up-to-date clips into one MP4 (ffmpeg-static); play it in the page and **Download MP4**
 - With mock clips, each shot appears as a title card for its duration; real Veo clips go in as video
+
+## Real video: Gemini Omni Flash
+1. Get a Gemini API key with billing enabled (aistudio.google.com).
+2. Remove any old `GEMINI_API_KEY` from your Windows environment variables. Next.js gives it priority over `.env.local`.
+3. In `.env.local`: `GEMINI_API_KEY=...`, `IMAGE_PROVIDER=gemini`, `VIDEO_PROVIDER=omni`.
+4. Render tab, set Quality to Draft (360p, ~$0.023/s) while iterating, Final (720p, ~$0.07/s) for the cut. Every paid render asks first and shows an estimate.

@@ -17,6 +17,9 @@ model Project {
   scenes     Scene[]
   characters Character[]
 
+  // Render quality for every clip in the project: draft (cheap, 360p) or final (720p).
+  renderQuality String @default("draft")
+
   // Milestone 4: the assembled cut. exportHash = hash of the clips that went into exportFile.
   exportFile String?
   exportHash String?

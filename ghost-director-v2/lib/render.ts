@@ -2,6 +2,7 @@ import { db } from './db';
 import { getVideo, videoFor } from './providers';
 import { fileUrl, readStored, removeFile, saveFile, sha, EXT } from './storage';
 import { frameState, shotWithRefs, type ShotWithRefs } from './storyboard';
+import type { RenderQuality } from './providers/video-types';
 
 // Per-shot video render. Rules this file guarantees:
 // - A clip is rendered from the shot's up-to-date storyboard frame plus its camera, mood, duration and dialogue.
@@ -10,12 +11,14 @@ import { frameState, shotWithRefs, type ShotWithRefs } from './storyboard';
 // - A job whose result arrives after the shot was re-rendered with newer inputs is discarded.
 
 const RENDER_VERSION = 1;
+export const qualityOf = (shot: ShotWithRefs): RenderQuality => (shot.scene.project.renderQuality === 'final' ? 'final' : 'draft');
 const JOB_TIMEOUT_MS = 10 * 60_000; // a render older than this counts as abandoned
 
 export function renderHash(shot: ShotWithRefs): string {
   return sha(JSON.stringify({
     v: RENDER_VERSION,
     provider: getVideo().name,
+    quality: qualityOf(shot),
     frame: shot.storyboardImage, // content-addressed, so a new frame image = new hash
     description: shot.description,
     camera: shot.camera,
@@ -80,6 +83,7 @@ export async function startShotRender(shotId: string, force = false): Promise<Re
       durationSec: shot.durationSec,
       dialogue: shot.dialogue,
       frame,
+      quality: qualityOf(shot),
     });
     // Only attach the job if this start is still the latest one for the shot.
     await db.shot.updateMany({ where: { id: shotId, renderStartedAt: startedAt }, data: { renderJob: jobId } });
