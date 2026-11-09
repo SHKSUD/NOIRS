@@ -2,17 +2,11 @@
 // Runs against a throwaway SQLite database and storage folder, with the mock image and video providers.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { useThrowawayEnv, createSchema } from './helpers';
 
-const tmp = mkdtempSync(path.join(tmpdir(), 'gd-test-'));
-process.env.GD_DATABASE_URL = `file:${path.join(tmp, 'test.db').replace(/\\/g, '/')}`;
-process.env.GD_STORAGE_DIR = path.join(tmp, 'storage');
-process.env.GD_MOCK_RENDER_MS = '30';
-delete process.env.IMAGE_PROVIDER; // always mock in tests
-delete process.env.VIDEO_PROVIDER;
+const env = useThrowawayEnv();
 
 // Imported after the env is set, so they use the throwaway DB/storage.
 const { db } = await import('../lib/db');
@@ -47,11 +41,7 @@ function assertOnlyChanged(before: Record<string, string>, afterSnap: Record<str
 }
 
 before(async () => {
-  // Create the schema in the throwaway database.
-  const sql = execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['prisma', 'migrate', 'diff', '--from-empty', '--to-schema-datamodel', 'prisma/schema.prisma', '--script'],
-    { encoding: 'utf8', shell: process.platform === 'win32' });
-  for (const stmt of sql.split(/;\s*$/m).map(s => s.replace(/^--.*$/gm, '').trim()).filter(Boolean)) await db.$executeRawUnsafe(stmt);
+  await createSchema(db);
 
   const p = await db.project.create({ data: { title: 'Test', script: 'x'.repeat(30) } });
   const meera = await db.character.create({ data: { projectId: p.id, name: 'MEERA', styleNote: 'denim jacket' } });
@@ -74,7 +64,7 @@ before(async () => {
 
 after(async () => {
   await db.$disconnect();
-  rmSync(tmp, { recursive: true, force: true });
+  env.cleanup();
 });
 
 test('re-rendering an edited shot changes that shot only', async () => {

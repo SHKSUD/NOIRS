@@ -16,6 +16,11 @@ model Project {
   updatedAt  DateTime    @updatedAt
   scenes     Scene[]
   characters Character[]
+
+  // Milestone 4: the assembled cut. exportHash = hash of the clips that went into exportFile.
+  exportFile String?
+  exportHash String?
+  exportedAt DateTime?
 }
 
 model Scene {

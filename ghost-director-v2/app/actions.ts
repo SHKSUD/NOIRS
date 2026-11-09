@@ -10,6 +10,7 @@ import { LIMITS } from '@/lib/providers/types';
 import { frameState, generateShotFrame, shotWithRefs, type FrameState } from '@/lib/storyboard';
 import { EXT, fileUrl, removeFile, saveFile, sha } from '@/lib/storage';
 import { pollShotRender, renderState, startShotRender, type RenderState } from '@/lib/render';
+import { assembleCut, type CutPlan, type ExportState } from '@/lib/assemble';
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -241,6 +242,16 @@ export async function startRender(shotId: string, force = false): Promise<{ ok: 
 export async function pollRender(shotId: string): Promise<{ ok: true; render: RenderState } | { ok: false; error: string }> {
   try {
     return { ok: true, render: await pollShotRender(shotId) };
+  } catch (e) {
+    return { ok: false, error: message(e) };
+  }
+}
+
+// ===== Milestone 4: assemble and export =====
+
+export async function assembleExport(projectId: string): Promise<{ ok: true; state: ExportState; plan: CutPlan; reused: boolean } | { ok: false; error: string }> {
+  try {
+    return { ok: true, ...(await assembleCut(projectId)) };
   } catch (e) {
     return { ok: false, error: message(e) };
   }
