@@ -167,15 +167,42 @@ async function dropIfUnused(name: string | null) {
 }
 
 // Sets (or replaces) a character's locked reference. Only shots featuring this character go out of date.
+// Validates and stores an uploaded reference image. Returns its file name, or an error message.
+async function storeReference(file: FormDataEntryValue | null): Promise<{ name: string } | { error: string }> {
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' };
+  if (file.size > MAX_REF_BYTES) return { error: 'Image is too large (max 2 MB).' };
+  const data = Buffer.from(await file.arrayBuffer());
+  const mime = sniff(data);
+  if (!mime) return { error: 'Use a PNG, JPEG or WebP image.' };
+  return { name: await saveFile(`ref-${sha(data)}.${EXT[mime]}`, data) };
+}
+
+export async function createCharacter(projectId: string, _: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const name = String(fd.get('name') || '').trim().replace(/\s+/g, ' ').slice(0, LIMITS.short);
+    if (!name) return { error: 'Give the character a name.' };
+    const taken = await db.character.findMany({ where: { projectId }, select: { name: true } });
+    if (taken.some(c => c.name.toUpperCase() === name.toUpperCase())) return { error: `${name} already exists.` };
+    let referenceImage: string | null = null;
+    const file = fd.get('file');
+    if (file instanceof File && file.size > 0) {
+      const stored = await storeReference(file);
+      if ('error' in stored) return { error: stored.error };
+      referenceImage = stored.name;
+    }
+    await db.character.create({ data: { projectId, name, styleNote: String(fd.get('styleNote') || '').slice(0, LIMITS.text), referenceImage } });
+    revalidatePath(`/projects/${projectId}`, 'layout');
+    return { ok: `${name} added. Add them to shots from the shot list.` };
+  } catch (e) {
+    return { error: message(e) };
+  }
+}
+
 export async function setCharacterReference(characterId: string, fd: FormData): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   try {
-    const file = fd.get('file');
-    if (!(file instanceof File) || file.size === 0) return { ok: false, error: 'Choose an image file.' };
-    if (file.size > MAX_REF_BYTES) return { ok: false, error: 'Image is too large (max 2 MB).' };
-    const data = Buffer.from(await file.arrayBuffer());
-    const mime = sniff(data);
-    if (!mime) return { ok: false, error: 'Use a PNG, JPEG or WebP image.' };
-    const name = await saveFile(`ref-${sha(data)}.${EXT[mime]}`, data);
+    const stored = await storeReference(fd.get('file'));
+    if ('error' in stored) return { ok: false, error: stored.error };
+    const name = stored.name;
     const before = await db.character.findUnique({ where: { id: characterId }, select: { referenceImage: true, projectId: true } });
     if (!before) return { ok: false, error: 'Character not found.' };
     await db.character.update({ where: { id: characterId }, data: { referenceImage: name } });
