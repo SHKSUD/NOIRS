@@ -80,7 +80,8 @@ export async function generateShotFrame(shotId: string, force = false): Promise<
     });
     const ext = EXT[img.mime];
     if (!ext) throw new Error(`Unsupported image type: ${img.mime}`);
-    const name = `frame-${shotId}-${hash.slice(0, 16)}.${ext}`;
+    // Named by the image bytes, so a regenerated image always gets a new URL (files are cached as immutable).
+    const name = `frame-${shotId}-${sha(img.data)}.${ext}`;
     await saveFile(name, img.data);
     const updated = await db.shot.update({
       where: { id: shotId },

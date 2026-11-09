@@ -44,7 +44,7 @@ export default function CharacterCard({ id, name, styleNote, referenceUrl, shotC
 
   return (
     <article className="card flex flex-col gap-4 p-4 sm:flex-row" aria-labelledby={`${id}-n`}>
-      <div className="w-full shrink-0 sm:w-40">
+      <div className="w-40 shrink-0">
         <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-ink/60">
           {ref ? (
             // eslint-disable-next-line @next/next/no-img-element

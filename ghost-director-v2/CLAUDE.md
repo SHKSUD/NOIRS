@@ -19,6 +19,12 @@ Project -> Scene -> Shot. A Shot holds: description, camera, framing, mood, dura
 ## Stack
 Next.js (App Router) + TypeScript + Tailwind; SQLite via Prisma; model calls behind a provider interface in `lib/providers/` so the LLM and video model can be swapped. Keys go in `.env.local` and are never committed.
 
+## How frames stay consistent
+- `lib/storyboard.ts` hashes a shot's visual inputs (description, framing, camera, mood, scene heading, and each character's name, style note and reference file). Same hash = nothing to do.
+- Dialogue and duration are not inputs, so editing them never invalidates a frame.
+- References and frames are stored in `storage/` (gitignored), named by content hash, served by `/files/[name]`.
+- Image providers live in `lib/providers/`: `mock` (default, SVG) and `gemini` (opt-in with `IMAGE_PROVIDER=gemini`).
+
 ## Rules
 - Keep rendering per-shot and idempotent: re-rendering one shot must not touch others.
 - Ask before adding a dependency or expanding beyond the MVP scope.
@@ -26,6 +32,6 @@ Next.js (App Router) + TypeScript + Tailwind; SQLite via Prisma; model calls beh
 
 ## Milestones
 1. **Done when:** scaffold + data model; script page splits a script into scenes and shots via the LLM provider; shot list page edits and saves every field; mock LLM so it runs without keys.
-2. Storyboard frames with a locked character reference.
+2. **Done when:** each character has a locked reference image + style note; each shot has a storyboard frame generated from its fields and its characters' references; frames are per shot and idempotent (input hash), editing a shot or a character marks only the affected frames out of date; mock image provider so it runs without keys.
 3. Per-shot render / re-render.
 4. Assemble and export.
