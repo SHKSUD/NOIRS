@@ -4,7 +4,7 @@ import path from 'node:path';
 
 // Local file storage for dev (storage/, gitignored). Production storage is an open question.
 // GD_STORAGE_DIR lets tests use a throwaway folder.
-const DIR = process.env.GD_STORAGE_DIR || path.join(process.cwd(), 'storage');
+const DIR = process.env.GD_STORAGE_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), 'storage');
 const SAFE = /^[a-z]+-[a-z0-9-]+\.(png|jpg|webp|svg|mp4)$/;
 
 export const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml', mp4: 'video/mp4' };
