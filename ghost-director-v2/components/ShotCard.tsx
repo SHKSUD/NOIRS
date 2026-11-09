@@ -5,6 +5,8 @@ import { updateShot, type ShotPatch } from '@/app/actions';
 import { CAMERAS, FRAMINGS } from '@/lib/providers/types';
 import { useAutosave } from './useAutosave';
 import SaveBadge from './SaveBadge';
+import FramePanel from './FramePanel';
+import type { FrameState } from '@/lib/storyboard';
 
 export type ShotData = {
   id: string; number: string; description: string; camera: string; framing: string; mood: string;
@@ -12,12 +14,17 @@ export type ShotData = {
 };
 type Character = { id: string; name: string };
 
-export default function ShotCard({ shot, characters }: { shot: ShotData; characters: Character[] }) {
+export default function ShotCard({ shot, characters, frame: initialFrame }: { shot: ShotData; characters: Character[]; frame: FrameState }) {
   const [s, setS] = useState(shot);
+  const [frame, setFrame] = useState(initialFrame);
   const [dur, setDur] = useState(String(shot.durationSec)); // text, so half-typed values like "2." are allowed
   const durNum = parseFloat(dur);
   const durBad = dur !== '' && !(durNum >= 0.5 && durNum <= 60);
-  const save = useCallback((p: ShotPatch) => updateShot(shot.id, p), [shot.id]);
+  const save = useCallback(async (p: ShotPatch) => {
+    const r = await updateShot(shot.id, p);
+    if (r.ok) setFrame(r.frame); // edits can make the frame out of date
+    return r;
+  }, [shot.id]);
   const { status, error, queue, flush } = useAutosave<ShotPatch>(save);
 
   const set = <K extends keyof ShotData & keyof ShotPatch>(k: K, v: ShotData[K]) => {
@@ -52,7 +59,9 @@ export default function ShotCard({ shot, characters }: { shot: ShotData; charact
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 self-start">
+        <div className="space-y-3 self-start">
+        <FramePanel shotId={shot.id} frame={frame} onFrame={setFrame} alt={`Storyboard frame for shot ${s.number}`} />
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor={id('frm')}>Framing</label>
             <input id={id('frm')} list="framings" className="field text-sm" value={s.framing} maxLength={120}
@@ -80,6 +89,7 @@ export default function ShotCard({ shot, characters }: { shot: ShotData; charact
               onBlur={() => setDur(String(s.durationSec))} />
             {durBad && <p className="mt-1 text-xs text-danger">0.5–60 seconds</p>}
           </div>
+        </div>
         </div>
       </div>
 

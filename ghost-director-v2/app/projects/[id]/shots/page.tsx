@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import ShotCard, { ShotDatalists } from '@/components/ShotCard';
+import { frameState, shotWithRefs } from '@/lib/storyboard';
 import SceneHeader from '@/components/SceneHeader';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export default async function ShotListPage({ params }: { params: Promise<{ id: s
         orderBy: { order: 'asc' },
         select: {
           id: true, heading: true, summary: true,
-          shots: { orderBy: { order: 'asc' }, include: { characters: { select: { characterId: true } } } },
+          shots: { orderBy: { order: 'asc' }, ...shotWithRefs },
         },
       },
     },
@@ -41,6 +42,7 @@ export default async function ShotListPage({ params }: { params: Promise<{ id: s
               <ShotCard
                 key={shot.id}
                 characters={project.characters}
+                frame={frameState(shot)}
                 shot={{
                   id: shot.id, number: `${si + 1}.${i + 1}`, description: shot.description, camera: shot.camera,
                   framing: shot.framing, mood: shot.mood, durationSec: shot.durationSec, dialogue: shot.dialogue,
