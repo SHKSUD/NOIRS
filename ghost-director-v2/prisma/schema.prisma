@@ -50,10 +50,15 @@ model Shot {
   storyboardInputHash String?
   storyboardError     String?
 
-  // Milestone 3+: video render (unused so far)
-  renderStatus    String  @default("none") // none | queued | rendering | done | failed
-  renderOutput    String?
-  renderInputHash String? // hash of the inputs that produced renderOutput, so re-render is idempotent
+  // Milestone 3: per-shot video render. Renders are async jobs: renderPendingHash is the hash of the inputs
+  // being rendered; on success it becomes renderInputHash. A job whose renderJob no longer matches is discarded.
+  renderStatus      String    @default("idle") // idle | rendering | done | failed
+  renderOutput      String?   // clip file in storage/
+  renderInputHash   String?   // inputs that produced renderOutput
+  renderPendingHash String?
+  renderJob         String?   // provider job id while rendering
+  renderStartedAt   DateTime?
+  renderError       String?
 
   updatedAt DateTime @updatedAt
 

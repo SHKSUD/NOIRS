@@ -1,5 +1,5 @@
 import { normalizeBreakdown } from './normalize';
-import { CAMERAS, FRAMINGS, LLMProvider } from './types';
+import { CAMERAS, FRAMINGS, type LLMProvider } from './types';
 
 // Claude via plain fetch (no SDK dependency).
 const PROMPT = `You are a film director and first AD. Break the screenplay below into scenes and a shot list.

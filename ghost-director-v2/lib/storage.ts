@@ -3,11 +3,12 @@ import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 // Local file storage for dev (storage/, gitignored). Production storage is an open question.
-const DIR = path.join(process.cwd(), 'storage');
-const SAFE = /^[a-z]+-[a-z0-9-]+\.(png|jpg|webp|svg)$/;
+// GD_STORAGE_DIR lets tests use a throwaway folder.
+const DIR = process.env.GD_STORAGE_DIR || path.join(process.cwd(), 'storage');
+const SAFE = /^[a-z]+-[a-z0-9-]+\.(png|jpg|webp|svg|mp4)$/;
 
-export const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml' };
-export const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
+export const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml', mp4: 'video/mp4' };
+export const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg', 'video/mp4': 'mp4' };
 
 export const sha = (data: Buffer | string, len = 16) => createHash('sha256').update(data).digest('hex').slice(0, len);
 export const isSafeName = (name: string) => SAFE.test(name);

@@ -9,6 +9,7 @@ import { clampDuration } from '@/lib/providers/normalize';
 import { LIMITS } from '@/lib/providers/types';
 import { frameState, generateShotFrame, shotWithRefs, type FrameState } from '@/lib/storyboard';
 import { EXT, fileUrl, removeFile, saveFile, sha } from '@/lib/storage';
+import { pollShotRender, startShotRender, type RenderState } from '@/lib/render';
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -194,6 +195,25 @@ export async function removeCharacterReference(characterId: string): Promise<{ o
     await dropIfUnused(before.referenceImage);
     revalidatePath(`/projects/${before.projectId}`, 'layout');
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: message(e) };
+  }
+}
+
+// ===== Milestone 3: per-shot render =====
+
+export async function startRender(shotId: string, force = false): Promise<{ ok: true; render: RenderState; skipped: boolean } | { ok: false; error: string }> {
+  try {
+    const { skipped, ...render } = await startShotRender(shotId, force);
+    return { ok: true, render, skipped };
+  } catch (e) {
+    return { ok: false, error: message(e) };
+  }
+}
+
+export async function pollRender(shotId: string): Promise<{ ok: true; render: RenderState } | { ok: false; error: string }> {
+  try {
+    return { ok: true, render: await pollShotRender(shotId) };
   } catch (e) {
     return { ok: false, error: message(e) };
   }

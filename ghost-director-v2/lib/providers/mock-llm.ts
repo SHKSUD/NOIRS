@@ -1,5 +1,5 @@
 import { normalizeBreakdown } from './normalize';
-import { Breakdown, LLMProvider } from './types';
+import type { Breakdown, LLMProvider } from './types';
 
 // Deterministic, offline breakdown: parses screenplay structure with simple rules.
 // Same script in -> same shots out, so tests and demos are repeatable.

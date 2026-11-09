@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "db:push": "prisma db push",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "node --import ./test/register.mjs --test test/*.test.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

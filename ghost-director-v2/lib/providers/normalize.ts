@@ -1,4 +1,4 @@
-import { Breakdown, LIMITS, SceneDraft, ShotDraft } from './types';
+import { type Breakdown, LIMITS, type SceneDraft, type ShotDraft } from './types';
 
 const str = (v: unknown, max: number = LIMITS.text) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v: unknown, fallback: number) => {
