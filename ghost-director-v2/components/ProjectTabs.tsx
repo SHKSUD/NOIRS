@@ -10,6 +10,7 @@ export default function ProjectTabs({ id }: { id: string }) {
     { href: `/projects/${id}/shots`, label: 'Shot list' },
     { href: `/projects/${id}/characters`, label: 'Characters' },
     { href: `/projects/${id}/storyboard`, label: 'Storyboard' },
+    { href: `/projects/${id}/render`, label: 'Render' },
   ];
   return (
     // Bottom rule drawn as an inset shadow so the active tab's border can sit on it without overflowing

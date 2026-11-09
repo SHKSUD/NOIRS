@@ -7,8 +7,9 @@ Script → scenes → editable shot list. See `CLAUDE.md` for scope and `docs/op
 npm install          # also runs prisma generate
 npm run db:push      # creates prisma/dev.db
 npm run dev          # http://localhost:3000  (add -- -p 3001 to change port)
+npm test             # proves re-rendering one shot touches no other shot
 ```
-No API key needed: the LLM and image model are mocked. To use real models, copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`, and/or `IMAGE_PROVIDER=gemini` with `GEMINI_API_KEY`.
+No API key needed: the LLM and image model are mocked. To use real models, copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`, and/or `IMAGE_PROVIDER=gemini` / `VIDEO_PROVIDER=veo` with `GEMINI_API_KEY`. Real image and video models cost money, so they are opt-in.
 
 ## Milestone 1 (done)
 - Home: paste a script (or "Use sample script") → **Break down into shots**
@@ -16,6 +17,11 @@ No API key needed: the LLM and image model are mocked. To use real models, copy 
 - Script tab: edit and save the script (shots untouched) or explicitly re-run the breakdown
 
 ## Milestone 2 (done)
-- Characters tab: upload a reference image per character (locked) and a style note
+- Characters tab: create characters; upload a reference image per character (locked) and a style note
 - Storyboard tab: one frame per shot; **Update N frames** only draws missing or out-of-date frames
 - Shot list: each shot shows its frame; editing a shot marks only that frame out of date
+
+## Milestone 3 (done)
+- Render tab: one clip per shot (mock = animated preview of the frame with camera move, subtitle and timing)
+- **Update N clips** renders only missing or out-of-date clips; a shot with an out-of-date frame must update its frame first
+- Shot list shows each shot's clip status; editing a shot marks only that shot out of date

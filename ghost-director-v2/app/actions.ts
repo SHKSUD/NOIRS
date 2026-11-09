@@ -9,7 +9,7 @@ import { clampDuration } from '@/lib/providers/normalize';
 import { LIMITS } from '@/lib/providers/types';
 import { frameState, generateShotFrame, shotWithRefs, type FrameState } from '@/lib/storyboard';
 import { EXT, fileUrl, removeFile, saveFile, sha } from '@/lib/storage';
-import { pollShotRender, startShotRender, type RenderState } from '@/lib/render';
+import { pollShotRender, renderState, startShotRender, type RenderState } from '@/lib/render';
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -95,7 +95,7 @@ export type ShotPatch = Partial<{
 }>;
 
 // Saves edits to ONE shot. Never touches other shots. Returns the shot's frame state (it may now be out of date).
-export async function updateShot(shotId: string, patch: ShotPatch): Promise<{ ok: true; updatedAt: string; frame: FrameState } | { ok: false; error: string }> {
+export async function updateShot(shotId: string, patch: ShotPatch): Promise<{ ok: true; updatedAt: string; frame: FrameState; render: RenderState } | { ok: false; error: string }> {
   try {
     const shot = await db.shot.findUnique({ where: { id: shotId }, select: { scene: { select: { projectId: true } } } });
     if (!shot) return { ok: false, error: 'Shot not found.' };
@@ -113,7 +113,7 @@ export async function updateShot(shotId: string, patch: ShotPatch): Promise<{ ok
       data.characters = { deleteMany: {}, create: valid.map(c => ({ characterId: c.id })) };
     }
     const row = await db.shot.update({ where: { id: shotId }, data, ...shotWithRefs });
-    return { ok: true, updatedAt: row.updatedAt.toISOString(), frame: frameState(row) };
+    return { ok: true, updatedAt: row.updatedAt.toISOString(), frame: frameState(row), render: renderState(row) };
   } catch (e) {
     return { ok: false, error: message(e) };
   }

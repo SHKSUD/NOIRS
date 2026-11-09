@@ -7,6 +7,7 @@ import { useAutosave } from './useAutosave';
 import SaveBadge from './SaveBadge';
 import FramePanel from './FramePanel';
 import type { FrameState } from '@/lib/storyboard';
+import type { RenderState } from '@/lib/render';
 
 export type ShotData = {
   id: string; number: string; description: string; camera: string; framing: string; mood: string;
@@ -14,15 +15,16 @@ export type ShotData = {
 };
 type Character = { id: string; name: string };
 
-export default function ShotCard({ shot, characters, frame: initialFrame }: { shot: ShotData; characters: Character[]; frame: FrameState }) {
+export default function ShotCard({ shot, characters, frame: initialFrame, render: initialRender }: { shot: ShotData; characters: Character[]; frame: FrameState; render: RenderState }) {
   const [s, setS] = useState(shot);
   const [frame, setFrame] = useState(initialFrame);
+  const [render, setRender] = useState(initialRender);
   const [dur, setDur] = useState(String(shot.durationSec)); // text, so half-typed values like "2." are allowed
   const durNum = parseFloat(dur);
   const durBad = dur !== '' && !(durNum >= 0.5 && durNum <= 60);
   const save = useCallback(async (p: ShotPatch) => {
     const r = await updateShot(shot.id, p);
-    if (r.ok) setFrame(r.frame); // edits can make the frame out of date
+    if (r.ok) { setFrame(r.frame); setRender(r.render); } // edits can make the frame and clip out of date
     return r;
   }, [shot.id]);
   const { status, error, queue, flush } = useAutosave<ShotPatch>(save);
@@ -42,7 +44,10 @@ export default function ShotCard({ shot, characters, frame: initialFrame }: { sh
     <article className="card p-4" aria-labelledby={id('n')} onBlur={() => flush()}>
       <header className="mb-3 flex items-center justify-between gap-2">
         <h3 id={id('n')} className="font-display text-sm font-semibold tracking-widest text-gold">SHOT {s.number}</h3>
-        <SaveBadge status={status} error={error} onRetry={() => flush()} />
+        <div className="flex items-center gap-3">
+          <ClipBadge render={render} />
+          <SaveBadge status={status} error={error} onRetry={() => flush()} />
+        </div>
       </header>
 
       <div className="grid gap-3 md:grid-cols-[1fr_minmax(0,300px)]">
@@ -121,4 +126,12 @@ export function ShotDatalists() {
       <datalist id="cameras">{CAMERAS.map(c => <option key={c} value={c} />)}</datalist>
     </>
   );
+}
+
+function ClipBadge({ render }: { render: RenderState }) {
+  const [text, cls] = render.status === 'rendering' ? ['Clip rendering', 'text-gold']
+    : render.url && render.stale ? ['Clip out of date', 'text-gold']
+    : render.url ? ['Clip up to date', 'text-muted']
+    : ['No clip', 'text-muted'];
+  return <span className={`text-xs ${cls}`}>{text}</span>;
 }
