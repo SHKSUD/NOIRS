@@ -43,8 +43,14 @@ model Shot {
   dialogue    String          @default("")
   characters  ShotCharacter[]
 
-  // Milestone 2+: storyboard + per-shot rendering (unused in Milestone 1)
-  storyboardImage String?
+  // Milestone 2: storyboard frame. storyboardInputHash = hash of the inputs that made storyboardImage;
+  // if the current inputs hash differently, the frame is out of date. Generation is per shot and idempotent.
+  storyboardImage     String?
+  storyboardStatus    String  @default("none") // none | generating | done | failed
+  storyboardInputHash String?
+  storyboardError     String?
+
+  // Milestone 3+: video render (unused so far)
   renderStatus    String  @default("none") // none | queued | rendering | done | failed
   renderOutput    String?
   renderInputHash String? // hash of the inputs that produced renderOutput, so re-render is idempotent
@@ -59,7 +65,7 @@ model Character {
   projectId      String
   project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name           String
-  referenceImage String? // Milestone 2: locked reference image
+  referenceImage String? // file name in storage/, content-addressed (ref-<sha>.<ext>); used for every frame of this character
   styleNote      String          @default("")
   shots          ShotCharacter[]
 

@@ -1,11 +1,20 @@
 import { anthropicLLM } from './anthropic-llm';
 import { mockLLM } from './mock-llm';
+import { geminiImage } from './gemini-image';
+import { mockImage } from './mock-image';
 import type { LLMProvider } from './types';
+import type { ImageProvider } from './image-types';
 
 export type { Breakdown, LLMProvider } from './types';
+export type { ImageProvider, FrameRequest } from './image-types';
 
 // LLM_PROVIDER=mock|anthropic. Default: anthropic when a key is set, otherwise mock (runs with no keys).
 export function getLLM(): LLMProvider {
   const pick = process.env.LLM_PROVIDER || (process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock');
   return pick === 'anthropic' ? anthropicLLM : mockLLM;
+}
+
+// IMAGE_PROVIDER=mock|gemini. Paid image generation is opt-in, so the default is always mock.
+export function getImage(): ImageProvider {
+  return process.env.IMAGE_PROVIDER === 'gemini' ? geminiImage : mockImage;
 }
