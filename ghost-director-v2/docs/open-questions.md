@@ -14,10 +14,13 @@ Record decisions here instead of guessing. Move an item to **Decided** with the 
 8. **Upgrade to Prisma 7?** Prisma 7 needs a driver-adapter package plus a native SQLite module, so v2 uses Prisma 6.19.3 (built-in SQLite). npm audit flags `deepmerge-ts` inside the Prisma CLI (dev-only, not shipped); the fix requires Prisma 7.
 9. **Relationship to v1 app** (`app/`): replace it, or run side by side until v2 reaches parity?
 10. **Which image model for real frames?** The Gemini provider is written but untested (no key). Compare Gemini image, Flux Kontext and Ideogram character reference on consistency and price per frame.
-11. **Veo clip length vs shot duration.** Veo returns fixed-length clips (about 8 s); shot durations are 2–6 s. Trim in assembly (Milestone 4), or request a duration where the model supports it?
-12. **Serving video for seeking.** `/files` does not support HTTP range requests yet; long MP4s may not seek in some browsers. Fine for the MVP; production storage (Q6) would handle it.
+11. **Veo clip length vs shot duration.** Assembly now holds or trims each clip to the shot's duration, so an 8 s Veo clip in a 3 s shot loses 5 s of paid video. Ask the model for the shot's duration where supported, or round shot durations to the model's lengths?
+12. **Assembly as a background job.** Assembling runs inside the request (about 1.3 s per shot locally with title cards). Long films and serverless time/size limits (the ffmpeg binary is about 80 MB) will need a background worker. Where will this run in production?
 
 ## Decided
+
+- 2026-11-09: **ffmpeg via ffmpeg-static 5.3.0** (approved), kept out of the Next.js bundle. Unrendered or out-of-date shots are skipped and flagged rather than filled with a slate. Mock clips become title cards in the cut.
+- 2026-11-09: `/files` supports HTTP range requests, so the cut and clips can be seeked.
 
 - 2026-11-09: Renders start from the shot's storyboard frame and are refused while the frame is out of date. Paid video is opt-in (`VIDEO_PROVIDER=veo`); the default mock produces an animated SVG preview, not an MP4.
 - 2026-11-09: Tests use Node's built-in runner (`node:test`), so no test framework dependency was added.

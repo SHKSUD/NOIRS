@@ -7,7 +7,7 @@ Script → scenes → editable shot list. See `CLAUDE.md` for scope and `docs/op
 npm install          # also runs prisma generate
 npm run db:push      # creates prisma/dev.db
 npm run dev          # http://localhost:3000  (add -- -p 3001 to change port)
-npm test             # proves re-rendering one shot touches no other shot
+npm test             # proves re-rendering one shot touches no other shot; checks assembly with real ffmpeg
 ```
 No API key needed: the LLM and image model are mocked. To use real models, copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY`, and/or `IMAGE_PROVIDER=gemini` / `VIDEO_PROVIDER=veo` with `GEMINI_API_KEY`. Real image and video models cost money, so they are opt-in.
 
@@ -25,3 +25,8 @@ No API key needed: the LLM and image model are mocked. To use real models, copy 
 - Render tab: one clip per shot (mock = animated preview of the frame with camera move, subtitle and timing)
 - **Update N clips** renders only missing or out-of-date clips; a shot with an out-of-date frame must update its frame first
 - Shot list shows each shot's clip status; editing a shot marks only that shot out of date
+
+## Milestone 4 (done)
+- Export tab: shots in scene order, with skipped shots flagged (not rendered / clip out of date / still rendering)
+- **Assemble cut** joins up-to-date clips into one MP4 (ffmpeg-static); play it in the page and **Download MP4**
+- With mock clips, each shot appears as a title card for its duration; real Veo clips go in as video

@@ -30,6 +30,11 @@ Next.js (App Router) + TypeScript + Tailwind; SQLite via Prisma; model calls beh
 - A render is refused while the shot's frame is missing or out of date, so a clip is never made from a stale frame.
 - `npm test` (Node's built-in runner, throwaway DB + storage) proves re-rendering one shot leaves every other shot row and file byte-identical.
 
+## How the cut is made
+- `lib/assemble.ts` plans the cut (scene order; skip + reason for shots without an up-to-date clip), normalises each clip to 1280x720@24 fps with stereo AAC, holds or trims it to the shot's duration, and concatenates.
+- Mock clips are SVG previews ffmpeg cannot decode; they become title cards in the cut.
+- Assembling never writes to shots; it is idempotent by a hash of the included clips.
+
 ## Rules
 - Keep rendering per-shot and idempotent: re-rendering one shot must not touch others.
 - Ask before adding a dependency or expanding beyond the MVP scope.
@@ -39,4 +44,4 @@ Next.js (App Router) + TypeScript + Tailwind; SQLite via Prisma; model calls beh
 1. **Done when:** scaffold + data model; script page splits a script into scenes and shots via the LLM provider; shot list page edits and saves every field; mock LLM so it runs without keys.
 2. **Done when:** each character has a locked reference image + style note; each shot has a storyboard frame generated from its fields and its characters' references; frames are per shot and idempotent (input hash), editing a shot or a character marks only the affected frames out of date; mock image provider so it runs without keys.
 3. **Done when:** each shot renders from its up-to-date frame + camera, mood, duration and dialogue through a video provider (mock default, Veo opt-in); status idle | rendering | done | failed; re-render is idempotent and touches only that shot (proved by `npm test`); editing a shot marks only that shot stale.
-4. Assemble and export.
+4. **Done when:** up-to-date clips are joined in scene order into one MP4 with ffmpeg (ffmpeg-static), shots without an up-to-date clip are skipped and listed with a reason, the cut can be played and downloaded, and re-assembling the same clips is a no-op.
